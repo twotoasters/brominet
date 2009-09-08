@@ -7,6 +7,7 @@
 //
 
 #import "TouchSynthesis.h"
+#import "UIViewAdditions.h"
 
 @implementation UITouch (Synthesize)
 
