@@ -28,7 +28,8 @@ const float BACKBUTTON_WAIT_DELAY = 0.75;
 - (void)performTouchInView:(UIView *)view hitTest:(BOOL)hitTest
 {
 	UITouch *touch = [[UITouch alloc] initInView:view hitTest:hitTest];
-	UIEvent *event = [[UIEvent alloc] initWithTouch:touch];
+	Class touchesEventClass = objc_getClass("UITouchesEvent"); // For 3.0 compatability
+	UIEvent *event = [[touchesEventClass alloc] initWithTouch:touch];
 	NSSet *touches = [[NSMutableSet alloc] initWithObjects:&touch count:1];
 
 	[touch.view touchesBegan:touches withEvent:event];
@@ -37,7 +38,7 @@ const float BACKBUTTON_WAIT_DELAY = 0.75;
 
 	[touch.view touchesEnded:touches withEvent:event];
 	
-	[event release];
+	//[event release]; LEAKING, but making it work.
 	[touches release];
 	[touch release];
 }

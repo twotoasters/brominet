@@ -28,11 +28,8 @@
 // Determines the target view by either performing a hit test, or just
 // forcing the tap to land on the passed-in view.
 //
-- (id)initInView:(UIView *)view hitTest:(BOOL)hitTest
-{
-	self = [super init];
-	if (self != nil)
-	{
+- (id)initInView:(UIView *)view hitTest:(BOOL)hitTest {
+	if (self = [super init]) {
 		CGRect frameInWindow;
 		if ([view isKindOfClass:[UIWindow class]])
 		{
@@ -41,22 +38,21 @@
 		else
 		{
 			frameInWindow =
-				[view.window convertRect:view.frame fromView:view.superview];
+			[view.window convertRect:view.frame fromView:view.superview];
 		}
-		 
+		CGPoint location = CGPointMake(frameInWindow.origin.x + 0.5 * frameInWindow.size.width,
+									   frameInWindow.origin.y + 0.5 * frameInWindow.size.height);
+		
 		_tapCount = 1;
-		_locationInWindow =
-			CGPointMake(
-				frameInWindow.origin.x + 0.5 * frameInWindow.size.width,
-				frameInWindow.origin.y + 0.5 * frameInWindow.size.height);
-		_previousLocationInWindow = _locationInWindow;
-
+		_locationInWindow = location;
+		_previousLocationInWindow = location;
+		
 		UIView *target = hitTest ?
-			[view.window hitTest:_locationInWindow withEvent:nil] :
-			view;
-
-		_window = [view.window retain];
+		[view.window hitTest:_locationInWindow withEvent:nil] :
+		view;
+		
 		_view = [target retain];
+		_window = [view.window retain];
 		_phase = UITouchPhaseBegan;
 		_touchFlags._firstTouchForView = 1;
 		_touchFlags._isTap = 1;
@@ -143,32 +139,23 @@
 //
 @implementation UIEvent (Synthesize)
 
-- (id)initWithTouch:(UITouch *)touch
-{
-	self = [super init];
-	if (self != nil)
-	{
-		PublicEvent *publicEvent = (PublicEvent *)self;
-		publicEvent->_touches = [[NSMutableSet alloc] initWithObjects:&touch count:1];
-		publicEvent->_timestamp = [NSDate timeIntervalSinceReferenceDate];
+- (id)initWithTouch:(UITouch *)touch {
+	if (self == [super init]) {
+		UIEventFake *selfFake = (UIEventFake*)self;
+		selfFake->_touches = [[NSMutableSet setWithObject:touch] retain];
+		selfFake->_timestamp = [NSDate timeIntervalSinceReferenceDate];
 		
 		CGPoint location = [touch locationInView:touch.window];
+		GSEventFake* fakeGSEvent = [[GSEventFake alloc] init];
+		fakeGSEvent->x = location.x;
+		fakeGSEvent->y = location.y;
+		selfFake->_event = fakeGSEvent;
 		
-		publicEvent->_event = [[GSEventProxy alloc] init];
-		publicEvent->_event->x = location.x;
-		publicEvent->_event->y = location.y;
-
-		CFMutableDictionaryRef dict =
-			CFDictionaryCreateMutable(
-				kCFAllocatorDefault,
-				0,
-				&kCFTypeDictionaryKeyCallBacks,
-				&kCFTypeDictionaryValueCallBacks);
-		
-		CFDictionaryAddValue(dict, touch.view, publicEvent->_touches);
-		CFDictionaryAddValue(dict, touch.window, publicEvent->_touches);
-		
-		publicEvent->_keyedTouches = dict;
+		CFMutableDictionaryRef dict = CFDictionaryCreateMutable(kCFAllocatorDefault, 2,
+																&kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+		CFDictionaryAddValue(dict, touch.view, selfFake->_touches);
+		CFDictionaryAddValue(dict, touch.window, selfFake->_touches);
+		selfFake->_keyedTouches = dict;
 	}
 	return self;
 }
